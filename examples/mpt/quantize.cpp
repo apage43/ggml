@@ -106,6 +106,7 @@ bool mpt_model_quantize(const std::string & fname_inp, const std::string & fname
             finp.read ((char *) &len, sizeof(len));
             fout.write((char *) &len, sizeof(len));
 
+            len = len &~ (1<<31);
             word.resize(len);
             finp.read ((char *) word.data(), len);
             fout.write((char *) word.data(), len);
