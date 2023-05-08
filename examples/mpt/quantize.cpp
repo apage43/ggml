@@ -85,7 +85,7 @@ bool mpt_model_quantize(const std::string & fname_inp, const std::string & fname
         fout.write((char *) &hparams.n_embd,  sizeof(hparams.n_embd));
         fout.write((char *) &hparams.alibi_bias_max,  sizeof(hparams.alibi_bias_max));
         fout.write((char *) &hparams.clip_qkv,  sizeof(hparams.clip_qkv));
-        fout.write((char *) &hparams.ftype,   sizeof(hparams.ftype));
+        fout.write((char *) &ftype,   sizeof(hparams.ftype));
     }
 
     // load vocab
@@ -117,7 +117,7 @@ bool mpt_model_quantize(const std::string & fname_inp, const std::string & fname
 
     // regexes of tensor names to be quantized
     const std::vector<std::string> to_quant = {
-        "blocks.*weight",
+        ".*blocks.*weight",
     };
 
     if (!ggml_common_quantize_0(finp, fout, ftype, to_quant, {})) {
