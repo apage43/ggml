@@ -62,10 +62,6 @@ struct mpt_model {
     std::map<std::string, struct ggml_tensor *> tensors;
 };
 
-std::string regex_escape(const std::string &s) {
-  static const std::regex metacharacters(R"([\.\^\$\-\+\(\)\[\]\{\}\|\?\*])");
-  return std::regex_replace(s, metacharacters, "\\$&");
-}
 
 // load the model's weights from a file
 bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vocab) {
@@ -141,7 +137,7 @@ bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vo
             // TODO: this only kind-of works, the gpt_tokenize can still incorrectly
             // tokenize special tokens
             if(special) {
-                vocab.add_special_token(regex_escape(word));
+                vocab.add_special_token(word);
             }
             
         }
