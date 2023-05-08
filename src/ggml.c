@@ -9389,7 +9389,7 @@ static void ggml_compute_forward_alibi_f32(
 
     const int ne0 = src0->ne[0]; // all_seq_len = n_past + ne1
     const int ne1 = src0->ne[1]; // seq_len_without_past
-    //const int ne2 = src0->ne[2]; // n_head -> this is k
+    const int ne2 = src0->ne[2]; // n_head -> this is k
     //const int ne3 = src0->ne[3]; // 1 -> bsz
 
     const int n  = ggml_nrows(src0);
@@ -9404,14 +9404,19 @@ static void ggml_compute_forward_alibi_f32(
     assert(ne1 + n_past == ne0); (void) n_past;
 
     // add alibi to src0 (KQ_scaled)
+    // TODO probably wrong for non-power-of-2 head counts as MPT uses ceil() here
     const int n_heads_log2_floor = 1 << (int) floor(log2(n_head));
+    // TODO make the MPT behavior selectable to unbreak the original users of this fn
+    // or split it into a separate op
 
-    const float m0 = powf(2.0f, -8.0f / n_heads_log2_floor);
-    const float m1 = powf(2.0f, -4.0f / n_heads_log2_floor);
+    // TODO make this configurable (alibi_bias_max)
+    // its larger in the "StoryWriter" MPT finetune
+    const float m0 = -8.0f / n_heads_log2_floor;
+    const float m1 = -4.0f / n_heads_log2_floor;
 
     for (int i = 0; i < ne0; i++) {
         for (int j = 0; j < ne1; j++) {
-            for (int k = 0; k < ne2_ne3; k++) {
+            for (int k = 0; k < ne2; k++) {
                 float * const src = (float *)((char *) src0->data + i*nb0 + j*nb1 + k*nb2);
                 float *      pdst = (float *)((char *)  dst->data + i*nb0 + j*nb1 + k*nb2);
 
@@ -9420,12 +9425,12 @@ static void ggml_compute_forward_alibi_f32(
                 float m_k;
 
                 if (k < n_heads_log2_floor) {
-                    m_k = powf(m0, k + 1);
+                    m_k = powf(2.0, m0 * (k + 1));
                 } else {
-                    m_k = powf(m1, 2 * (k - n_heads_log2_floor) + 1);
+                    m_k = powf(2.0, m1 * (2 * (k - n_heads_log2_floor) + 1));
                 }
-
-                pdst[0] = (j+1) * m_k + src[0];
+                const float ab =(i + (1-ne0)) * m_k ;
+                pdst[0] = ab + src[0];
             }
         }
     }
@@ -9450,7 +9455,7 @@ static void ggml_compute_forward_alibi_f16(
 
     const int ne0 = src0->ne[0]; // all_seq_len = n_past + ne1
     const int ne1 = src0->ne[1]; // seq_len_without_past
-    //const int ne2 = src0->ne[2]; // n_head -> this is k
+    const int ne2 = src0->ne[2]; // n_head -> this is k
     //const int ne3 = src0->ne[3]; // 1 -> bsz
 
     const int n  = ggml_nrows(src0);
@@ -9467,8 +9472,8 @@ static void ggml_compute_forward_alibi_f16(
     // add alibi to src0 (KQ_scaled)
     const int n_heads_log2_floor = 1 << (int) floor(log2(n_head));
 
-    const float m0 = powf(2.0f, -8.0f / n_heads_log2_floor);
-    const float m1 = powf(2.0f, -4.0f / n_heads_log2_floor);
+    const float m0 = -8.0f / n_heads_log2_floor;
+    const float m1 = -4.0f / n_heads_log2_floor;
 
     for (int i = 0; i < ne0; i++) {
         for (int j = 0; j < ne1; j++) {
@@ -9481,13 +9486,14 @@ static void ggml_compute_forward_alibi_f16(
                 float m_k;
 
                 if (k < n_heads_log2_floor) {
-                    m_k = powf(m0, k + 1);
+                    m_k = powf(2.0, m0 * (k + 1));
                 } else {
-                    m_k = powf(m1, 2 * (k - n_heads_log2_floor) + 1);
+                    m_k = powf(2.0, m1 * (2 * (k - n_heads_log2_floor) + 1));
                 }
+                const float ab =(i + (1-ne0)) * m_k;
 
                 // we return F32
-                pdst[0] = (j+1) * m_k + GGML_FP16_TO_FP32(src[0]);
+                pdst[0] = ab + GGML_FP16_TO_FP32(src[0]);
             }
         }
     }
