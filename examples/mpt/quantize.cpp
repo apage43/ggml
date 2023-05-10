@@ -48,7 +48,7 @@ bool mpt_model_quantize(const std::string & fname_inp, const std::string & fname
     {
         uint32_t magic;
         finp.read((char *) &magic, sizeof(magic));
-        if (magic != 0x67676d6c) {
+        if (magic != 0x67676d6d) {
             fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n", __func__, fname_inp.c_str());
             return false;
         }
