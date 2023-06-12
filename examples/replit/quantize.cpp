@@ -46,7 +46,7 @@ bool mpt_model_quantize(const std::string & fname_inp,
     {
         uint32_t magic;
         finp.read((char *)&magic, sizeof(magic));
-        if (magic != 0x67676d6c) {
+        if (magic != 0x7265706c) {
             fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n",
                     __func__, fname_inp.c_str());
             return false;
@@ -59,11 +59,11 @@ bool mpt_model_quantize(const std::string & fname_inp,
 
     // load hparams
     {
-        finp.read((char *) &hparams.d_model,     sizeof(hparams.d_model));
+        finp.read((char *) &hparams.n_vocab,     sizeof(hparams.n_vocab));
         finp.read((char *) &hparams.max_seq_len, sizeof(hparams.max_seq_len));
+        finp.read((char *) &hparams.d_model,     sizeof(hparams.d_model));
         finp.read((char *) &hparams.n_heads,     sizeof(hparams.n_heads));
         finp.read((char *) &hparams.n_layers,    sizeof(hparams.n_layers));
-        finp.read((char *) &hparams.n_vocab,     sizeof(hparams.n_vocab));
         finp.read((char *) &hparams.ftype,       sizeof(hparams.ftype));
 
         const int32_t qntvr_src =    hparams.ftype / GGML_QNT_VERSION_FACTOR;
@@ -79,11 +79,11 @@ bool mpt_model_quantize(const std::string & fname_inp,
         printf("%s: ftype (dst) = %d\n", __func__, ftype_dst);
         printf("%s: qntvr (dst) = %d\n", __func__, GGML_QNT_VERSION);
 
-        fout.write((char *) &hparams.d_model,     sizeof(hparams.d_model));
+        fout.write((char *) &hparams.n_vocab,     sizeof(hparams.n_vocab));
         fout.write((char *) &hparams.max_seq_len, sizeof(hparams.max_seq_len));
+        fout.write((char *) &hparams.d_model,     sizeof(hparams.d_model));
         fout.write((char *) &hparams.n_heads,     sizeof(hparams.n_heads));
         fout.write((char *) &hparams.n_layers,    sizeof(hparams.n_layers));
-        fout.write((char *) &hparams.n_vocab,     sizeof(hparams.n_vocab));
         fout.write((char *) &ftype_dst,           sizeof(ftype_dst));
     }
 
